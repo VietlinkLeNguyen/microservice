@@ -6,7 +6,7 @@ export class EmailService {
 
   constructor() {
     console.log("Initializing EmailService with SMTP configuration:", config.smtp);
-    
+
     this.transporter = nodemailer.createTransport({
       host: config.smtp.host,
       port: config.smtp.port,
@@ -29,7 +29,7 @@ export class EmailService {
     try {
       const info = await this.transporter.sendMail(mailOptions);
       console.log("Email sent: %s", info.messageId);
-      console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
+      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
     } catch (error) {
       console.error("Error sending email:", error);
     }

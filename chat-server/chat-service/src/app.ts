@@ -1,6 +1,6 @@
 import express, { Express } from "express";
-import userRouter from "./routes/messageRoutes";
 import { errorConverter, errorHandler } from "./middleware";
+import userRouter from "./routes/messageRoutes";
 
 const app: Express = express();
 app.use(express.json());

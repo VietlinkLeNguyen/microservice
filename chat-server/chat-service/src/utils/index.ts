@@ -1,5 +1,5 @@
 import { ApiError } from "./apiError";
-import { UserStatusStore } from "./userStatusStore";
 import { handleMessageReceived } from "./messageHandler";
+import { UserStatusStore } from "./userStatusStore";
 
-export { ApiError, UserStatusStore, handleMessageReceived };
+export { ApiError, handleMessageReceived, UserStatusStore };
