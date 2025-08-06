@@ -1,22 +1,18 @@
 import { Router } from "express";
 import MessageController from "../controllers/MessageController";
 import { authMiddleware } from "../middleware";
+import { validate } from "../validation";
+import { createConversationSchema } from "../validation/schema";
 
 const messageRoutes = Router();
 
-// @ts-ignore
 messageRoutes.post("/send", authMiddleware, MessageController.send);
-messageRoutes.get(
-  "/get/:receiverId",
-  // @ts-ignore
-  authMiddleware,
-  MessageController.getConversation
+messageRoutes.post(
+  "/conversation",
+  [authMiddleware, validate(createConversationSchema)],
+  MessageController.createConversation
 );
-messageRoutes.get(
-  "/get-conversations",
-  // @ts-ignore
-  authMiddleware,
-  MessageController.getAllConversations
-);
+messageRoutes.get("/get/:receiverId", authMiddleware, MessageController.getConversation);
+messageRoutes.get("/get-conversations", authMiddleware, MessageController.getAllConversations);
 
 export default messageRoutes;

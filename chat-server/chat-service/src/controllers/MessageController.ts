@@ -1,9 +1,10 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { Message } from "../database";
-import { AuthRequest } from "../middleware";
+// import { AuthRequest } from "../middleware";
+import Conversation from "../database/models/ConversationModel";
 import { ApiError, handleMessageReceived } from "../utils";
 
-const send = async (req: AuthRequest, res: Response) => {
+const send = async (req: Request, res: Response) => {
   try {
     let { receiverId, message, conversationId } = req.body;
     const { _id, email, name } = req.user;
@@ -38,13 +39,13 @@ const send = async (req: AuthRequest, res: Response) => {
 
     await handleMessageReceived(name, email, receiverId, message, conversationId);
 
-    return res.json({
+    return void res.json({
       status: 200,
       message: "Message sent successfully!",
       data: newMessage,
     });
   } catch (error: any) {
-    return res.json({
+    return void res.json({
       status: 500,
       message: error.message,
     });
@@ -61,7 +62,7 @@ const validateReceiver = (senderId: string, conversationId: string, receiverId: 
   }
 };
 
-const getConversation = async (req: AuthRequest, res: Response) => {
+const getConversation = async (req: Request, res: Response) => {
   try {
     const { conversationId } = req.params;
     const senderId = req.user._id;
@@ -70,33 +71,67 @@ const getConversation = async (req: AuthRequest, res: Response) => {
       senderId,
     });
 
-    return res.json({
+    return void res.json({
       status: 200,
       message: "Messages retrieved successfully!",
       data: messages,
     });
   } catch (error: any) {
-    return res.json({
+    return void res.json({
       status: 500,
       message: error.message,
     });
   }
 };
 
-const getAllConversations = async (req: AuthRequest, res: Response) => {
+const getAllConversations = async (req: Request, res: Response) => {
   try {
     const userId = req.user._id;
     const conversations = await Message.find({
       $or: [{ senderId: userId }, { receiverId: userId }],
     }).sort({ createdAt: -1 });
     const uniqueConversations = Array.from(new Map(conversations.map((msg) => [msg.receiverId, msg])).values());
-    return res.json({
+    res.json({
       status: 200,
       message: "Conversations retrieved successfully!",
       data: uniqueConversations,
     });
   } catch (error: any) {
-    return res.json({
+    res.json({
+      status: 500,
+      message: error.message,
+    });
+  }
+};
+
+const createConversation = async (req: Request, res: Response) => {
+  try {
+    const { userIds } = req.body;
+    console.log("userIds:", userIds);
+
+    // Check if userIds already have conversation
+    const existingConversation = await Message.findOne({
+      userIds: { $all: userIds },
+    });
+    console.log("existingConversation:", existingConversation);
+
+    if (existingConversation) {
+      res.json({
+        status: 400,
+        message: "Conversation already exists!",
+        data: existingConversation,
+      });
+    }
+    const newConversation = await Conversation.create({
+      userIds,
+    });
+    res.json({
+      status: 201,
+      message: "Conversation created successfully!",
+      data: newConversation,
+    });
+  } catch (error: any) {
+    res.json({
       status: 500,
       message: error.message,
     });
@@ -106,5 +141,6 @@ const getAllConversations = async (req: AuthRequest, res: Response) => {
 export default {
   send,
   getConversation,
+  createConversation,
   getAllConversations,
 };
