@@ -13,6 +13,6 @@ messageRoutes.post(
   MessageController.createConversation
 );
 messageRoutes.get("/get/:receiverId", authMiddleware, MessageController.getConversation);
-messageRoutes.get("/get-conversations", authMiddleware, MessageController.getAllConversations);
+messageRoutes.get("/all-conversations", authMiddleware, MessageController.getAllConversations);
 
 export default messageRoutes;

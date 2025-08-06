@@ -87,14 +87,14 @@ const getConversation = async (req: Request, res: Response) => {
 const getAllConversations = async (req: Request, res: Response) => {
   try {
     const userId = req.user._id;
-    const conversations = await Message.find({
-      $or: [{ senderId: userId }, { receiverId: userId }],
+
+    const conversations = await Conversation.find({
+      userIds: { $in: [userId] },
     }).sort({ createdAt: -1 });
-    const uniqueConversations = Array.from(new Map(conversations.map((msg) => [msg.receiverId, msg])).values());
     res.json({
       status: 200,
       message: "Conversations retrieved successfully!",
-      data: uniqueConversations,
+      data: conversations,
     });
   } catch (error: any) {
     res.json({
@@ -107,20 +107,17 @@ const getAllConversations = async (req: Request, res: Response) => {
 const createConversation = async (req: Request, res: Response) => {
   try {
     const { userIds } = req.body;
-    console.log("userIds:", userIds);
+    if (!userIds.includes(req.user._id)) {
+      throw new ApiError(400, "User must be included in the conversation.");
+    }
 
-    // Check if userIds already have conversation
-    const existingConversation = await Message.findOne({
+    const existingConversation = await Conversation.findOne({
       userIds: { $all: userIds },
     });
     console.log("existingConversation:", existingConversation);
 
     if (existingConversation) {
-      res.json({
-        status: 400,
-        message: "Conversation already exists!",
-        data: existingConversation,
-      });
+      throw new ApiError(400, "Conversation already exists.");
     }
     const newConversation = await Conversation.create({
       userIds,
@@ -132,7 +129,7 @@ const createConversation = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     res.json({
-      status: 500,
+      status: error.statusCode || 500,
       message: error.message,
     });
   }
