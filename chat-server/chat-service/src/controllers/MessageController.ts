@@ -6,38 +6,19 @@ import { ApiError, handleMessageReceived } from "../utils";
 
 const send = async (req: Request, res: Response) => {
   try {
-    let { receiverId, message, conversationId } = req.body;
+    let { message, conversationId } = req.body;
     const { _id, email, name } = req.user;
-    if (!conversationId) {
-      // check if the conversation exists
-      const existingConversation = await Message.findOne({
-        $or: [
-          { senderId: _id, receiverId },
-          { senderId: receiverId, receiverId: _id },
-        ],
-      });
 
-      if (!existingConversation) {
-        // Create a new conversation if it doesn't exist
-        const newConversation = await Message.create({
-          senderId: _id,
-          receiverId,
-          message: "New conversation started",
-        });
-        conversationId = newConversation._id;
-      }
-    }
-
-    validateReceiver(_id, conversationId, receiverId);
+    const conversation = await validateSendData(_id, conversationId);
 
     const newMessage = await Message.create({
       conversationId,
       senderId: _id,
-      receiverId,
       message,
     });
 
-    await handleMessageReceived(name, email, receiverId, message, conversationId);
+    const listReceivers = conversation.userIds.filter((id) => id !== _id);
+    await handleMessageReceived(name, email, message, conversationId, listReceivers);
 
     return void res.json({
       status: 200,
@@ -52,14 +33,20 @@ const send = async (req: Request, res: Response) => {
   }
 };
 
-const validateReceiver = (senderId: string, conversationId: string, receiverId: string) => {
-  if (!conversationId) {
-    throw new ApiError(404, "Conversation ID is required.");
+const validateSendData = async (senderId: string, conversationId: string) => {
+  const existingConversation = await Conversation.findOne({
+    _id: conversationId,
+  });
+  if (!existingConversation) {
+    throw new Error("Conversation does not exist.");
   }
+  const isInConversation = existingConversation.userIds.includes(senderId);
+  console.log("existingConversation:", existingConversation, senderId, existingConversation.userIds);
 
-  if (senderId == receiverId) {
-    throw new ApiError(400, "Sender and receiver cannot be the same.");
+  if (!isInConversation) {
+    throw new ApiError(400, "User is not part of the conversation.");
   }
+  return existingConversation;
 };
 
 const getConversation = async (req: Request, res: Response) => {

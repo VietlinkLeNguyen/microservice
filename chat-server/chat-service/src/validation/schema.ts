@@ -7,3 +7,8 @@ export const createConversationSchema = z.object({
       message: "Must be an array of unique strings",
     }),
 });
+
+export const sendMessageSchema = z.object({
+  message: z.string().min(0, "Can not send empty message"),
+  conversationId: z.string().min(1, "Conversation ID is required"),
+});

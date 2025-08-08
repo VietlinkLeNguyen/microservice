@@ -25,10 +25,6 @@ const MessageSchema: Schema = new Schema(
       type: String,
       required: true,
     },
-    receiverId: {
-      type: String,
-      required: true,
-    },
     message: {
       type: String,
       required: true,
