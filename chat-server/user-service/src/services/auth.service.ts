@@ -2,6 +2,7 @@ import * as bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import config from "../config/config";
 import { User } from "../database";
+import { ApiError } from "../utils";
 import { JWTPayload, UserRegisterDto } from "./../../interface/user";
 const jwtSecret = config.JWT_SECRET as string;
 
@@ -55,7 +56,7 @@ class AuthService {
       console.log("User found:", user, password, user?.password);
 
       if (!user || !(await bcrypt.compare(password, user.password as string))) {
-        throw new Error("Incorrect email or password");
+        throw new ApiError(401, "Incorrect email or password");
       }
       const token = await this.createSendToken({
         id: user.id,
@@ -63,8 +64,10 @@ class AuthService {
         email: user.email,
       });
       return token;
-    } catch (error) {
-      throw new Error("Error logging in user");
+    } catch (error: ApiError | any) {
+      console.log("Login error:", error);
+
+      throw new ApiError(401, error?.message ?? "Error logging in user");
     }
   }
 }

@@ -16,8 +16,11 @@ const send = async (req: Request, res: Response) => {
       senderId: _id,
       message,
     });
+    await Conversation.updateOne({ _id: conversationId }, { $push: { lastMessage: newMessage._id } });
 
-    const listReceivers = conversation.userIds.filter((id) => id !== _id);
+    const listReceivers = conversation.users
+      .filter((user) => user._id !== _id)
+      .map((user) => user._id?.toString() ?? "");
     await handleMessageReceived(name, email, message, conversationId, listReceivers);
 
     return void res.json({
@@ -40,8 +43,8 @@ const validateSendData = async (senderId: string, conversationId: string) => {
   if (!existingConversation) {
     throw new Error("Conversation does not exist.");
   }
-  const isInConversation = existingConversation.userIds.includes(senderId);
-  console.log("existingConversation:", existingConversation, senderId, existingConversation.userIds);
+  const isInConversation = existingConversation.users.filter((user) => user._id == senderId).length > 0;
+  console.log("existingConversation:", existingConversation, senderId, existingConversation.users);
 
   if (!isInConversation) {
     throw new ApiError(400, "User is not part of the conversation.");
@@ -52,11 +55,11 @@ const validateSendData = async (senderId: string, conversationId: string) => {
 const getConversation = async (req: Request, res: Response) => {
   try {
     const { conversationId } = req.params;
-    const senderId = req.user._id;
+    console.log("Fetching conversation with ID:", conversationId);
 
     const messages = await Message.find({
-      senderId,
-    });
+      conversationId,
+    }).select("_id senderId message createdAt");
 
     return void res.json({
       status: 200,
@@ -74,10 +77,14 @@ const getConversation = async (req: Request, res: Response) => {
 const getAllConversations = async (req: Request, res: Response) => {
   try {
     const userId = req.user._id;
+    console.log("Fetching all conversations for user ID:", userId);
 
     const conversations = await Conversation.find({
-      userIds: { $in: [userId] },
-    }).sort({ createdAt: -1 });
+      users: { $in: [userId] },
+    })
+      .populate("users", "name email")
+      .populate("lastMessage", "message senderId")
+      .sort({ createdAt: -1 });
     res.json({
       status: 200,
       message: "Conversations retrieved successfully!",
@@ -107,7 +114,7 @@ const createConversation = async (req: Request, res: Response) => {
       throw new ApiError(400, "Conversation already exists.");
     }
     const newConversation = await Conversation.create({
-      userIds,
+      users: userIds.map((userId: any) => ({ _id: userId })),
     });
     res.json({
       status: 201,

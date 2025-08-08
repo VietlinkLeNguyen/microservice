@@ -12,7 +12,7 @@ messageRoutes.post(
   [authMiddleware, validate(createConversationSchema)],
   MessageController.createConversation
 );
-messageRoutes.get("/get/:receiverId", authMiddleware, MessageController.getConversation);
 messageRoutes.get("/all-conversations", authMiddleware, MessageController.getAllConversations);
+messageRoutes.get("/:conversationId", authMiddleware, MessageController.getConversation);
 
 export default messageRoutes;

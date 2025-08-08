@@ -19,10 +19,13 @@ io.on("connection", (socket: Socket) => {
 
   socket.on("sendMessage", (message) => {
     io.emit("receiveMessage", message);
+    console.log("Message received logger 11111:", message);
   });
 
   socket.on("sendMessage", async (data) => {
     const { senderId, receiverId, message } = data;
+    console.log("Message received logger:", data);
+
     const msg = new Message({ senderId, receiverId, message });
     await msg.save();
 

@@ -1,14 +1,16 @@
 import mongoose, { Document, Schema } from "mongoose";
+import { IMessage } from "./MessageModel";
+import { IUser } from "./UserModel";
 
 export interface IConversation extends Document {
-  userIds: string[];
-  lastMessageId: string;
+  lastMessage: IMessage | null;
+  users: IUser[];
 }
 
 const ConversationSchema: Schema = new Schema(
   {
-    userIds: [{ type: String, required: true }],
-    lastMessageId: { type: String, required: false },
+    lastMessage: { type: Schema.Types.ObjectId, ref: "Message", required: false },
+    users: [{ type: Schema.Types.ObjectId, ref: "User" }],
   },
   {
     timestamps: true,
