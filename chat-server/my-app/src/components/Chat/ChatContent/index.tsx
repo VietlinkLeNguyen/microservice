@@ -149,10 +149,10 @@ export default function ChatContent({
                 <div className="chat-flex flex h-40 w-full grow flex-col-reverse justify-start gap-4 overflow-y-auto py-2 pr-4 pb-4">
                   {messages.map((msg, index) => (
                     <div
-                      key={`${msg.senderID}-${msg.createdAt}-${index}`}
+                      key={`${msg?.senderID}-${msg?.createdAt}-${index}`}
                       className={cn(
                         'chat-box max-w-72 px-3 py-2 break-words shadow-lg',
-                        msg.senderID === 'You'
+                        msg?.senderID === 'You'
                           ? 'bg-primary/85 text-primary-foreground/75 self-end rounded-[16px_16px_0_16px]'
                           : 'bg-secondary self-start rounded-[16px_16px_16px_0]'
                       )}
@@ -161,7 +161,7 @@ export default function ChatContent({
                       <span
                         className={cn(
                           'text-muted-foreground mt-1 block text-xs font-light italic',
-                          msg.senderID === 'You' && 'text-right'
+                          msg?.senderID === 'You' && 'text-right'
                         )}
                       >
                         {format(msg.createdAt, 'h:mm a')}

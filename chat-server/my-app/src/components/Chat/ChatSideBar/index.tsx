@@ -50,19 +50,19 @@ export default function ChatSideBar({
 
         <ScrollArea className="-mx-3 h-[calc(100%_-_100px)] p-3">
           {data.map((conversation) => {
-            const { id, users, lastMessage } = conversation;
+            const { _id, users, lastMessage } = conversation;
             const otherUser = users.find((u) => u.id !== user?._id);
             const lastMsg =
-              lastMessage.senderId === user?._id
-                ? `You: ${lastMessage.message}`
-                : lastMessage.message;
+              lastMessage?.senderId === user?._id
+                ? `You: ${lastMessage?.message}`
+                : lastMessage?.message;
             return (
-              <Fragment key={id}>
+              <Fragment key={_id}>
                 <button
                   type="button"
                   className={cn(
                     `hover:bg-secondary/75 -mx-1 flex w-full rounded-md px-2 py-2 text-left text-sm`,
-                    conversation?.id === id && 'sm:bg-muted'
+                    conversation?._id === _id && 'sm:bg-muted'
                   )}
                   onClick={() => {
                     setConversation(conversation);

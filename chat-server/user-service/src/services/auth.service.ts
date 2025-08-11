@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import config from "../config/config";
 import { User } from "../database";
 import { ApiError } from "../utils";
-import { JWTPayload, UserRegisterDto } from "./../../interface/user";
+import { JWTPayload, UserRegisterDto } from "./../interface/user";
 const jwtSecret = config.JWT_SECRET as string;
 
 class AuthService {

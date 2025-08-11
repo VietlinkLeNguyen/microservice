@@ -62,16 +62,32 @@ services:
       - /usr/src/app/node_modules # Preserve node_modules in container
     command: npm run dev # Override to use dev command
 
+  frontend:
+    container_name: frontend
+    build:
+      context: ./my-app
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./my-app:/usr/src/app # Mount entire project
+      - /usr/src/app/node_modules # Preserve node_modules in container
+    command: npm run dev # Override to use dev command
   nginx:
+    container_name: nginx
     build:
       context: ./nginx
       dockerfile: Dockerfile
     ports:
       - "85:85"
+      - "80:80"
     depends_on:
       - user
       - chat
       - notification
+      - frontend
   rabbitmq:
     image: rabbitmq:4-management
     container_name: rabbitmq
