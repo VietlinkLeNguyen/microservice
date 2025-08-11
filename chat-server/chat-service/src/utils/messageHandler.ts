@@ -6,18 +6,22 @@ const userStatusStore = UserStatusStore.getInstance();
 export const handleMessageReceived = async (
   senderName: string,
   senderEmail: string,
-  receiverId: string,
   messageContent: string,
-  conversationId: string
+  conversationId: string,
+  receiverIds: string[]
 ) => {
-  // userStatusStore.setUserOnline(receiverId);
-  const receiverIsOffline = !userStatusStore.isUserOnline(receiverId);
-  console.log(`Sending ${senderName}, ${senderEmail}, ${messageContent}, ${receiverId} is offline:`, receiverIsOffline);
-  console.log("User Status Store:", receiverIsOffline, userStatusStore, !receiverIsOffline);
+  receiverIds.forEach(async (receiverId) => {
+    const receiverIsOffline = !userStatusStore.isUserOnline(receiverId);
+    console.log(
+      `Sending ${senderName}, ${senderEmail}, ${messageContent}, ${receiverId} is offline:`,
+      receiverIsOffline
+    );
+    console.log("User Status Store:", receiverIsOffline, userStatusStore, !receiverIsOffline);
 
-  if (receiverIsOffline) {
-    console.log(`Receiver ${receiverId} is offline. Sending notification...`);
+    if (receiverIsOffline) {
+      console.log(`Receiver ${receiverId} is offline. Sending notification...`);
 
-    await rabbitMQService.notifyReceiver(receiverId, messageContent, senderEmail, senderName, conversationId);
-  }
+      await rabbitMQService.notifyReceiver(receiverId, messageContent, senderEmail, senderName, conversationId);
+    }
+  });
 };
