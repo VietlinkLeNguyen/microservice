@@ -1,6 +1,5 @@
 import { format } from 'date-fns';
-import { useEffect, useState } from 'react';
-import { io } from 'socket.io-client';
+import { useEffect, useRef, useState } from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -10,7 +9,6 @@ import { getMessages, Message } from '@/api/chat';
 import { IConversation } from '@/api/swr/chat';
 import { useAuthContext } from '@/context/auth-context';
 import {
-  ArrowLeft,
   EllipsisVertical,
   ImagePlus,
   MessagesSquare,
@@ -20,7 +18,8 @@ import {
   Send,
   Video
 } from 'lucide-react';
-// import { convo as conversations } from './data/convo';
+import { io, Socket } from 'socket.io-client';
+import { NewChat } from './NewChat';
 
 export default function ChatContent({
   conversation
@@ -29,27 +28,33 @@ export default function ChatContent({
 }) {
   const { user } = useAuthContext();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [mobileSelectedUser, setMobileSelectedUser] = useState<Message | null>(
-    null
-  );
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [text, setText] = useState('');
   const [createConversationDialogOpened, setCreateConversationDialog] =
     useState(false);
 
-  const socket = io('http://localhost:85', {
-    path: '/chat/socket.io'
-  });
-  socket.on('connect', () => {
-    console.log(socket.id);
-  });
-
-  socket.on('disconnect', () => {
-    console.log(socket.id);
-  });
-  socket.on('receiveMessage', (data) => {
-    console.log('New message:', data);
-  });
+  const token = localStorage.getItem('token');
+  console.log('Token:', token);
 
   useEffect(() => {
+    const socketInstance = io('http://localhost', {
+      path: '/chat/socket.io',
+      transports: ['websocket', 'polling'],
+      auth: { token },
+      withCredentials: true
+    });
+
+    setSocket(socketInstance);
+    return () => {
+      socketInstance.disconnect();
+    };
+  }, [token]);
+
+  useEffect(() => {
+    // emit join room
+    if (socket && conversation) {
+      socket.emit('joinRoom', conversation._id);
+    }
     const getData = async () => {
       if (conversation) {
         try {
@@ -61,19 +66,42 @@ export default function ChatContent({
       }
     };
     getData();
-  }, [conversation]);
+  }, [conversation, socket]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleReceiveMessage = (msg: Message) => {
+      console.log('Message received:', msg);
+      setMessages((prevMessages) => [...prevMessages, msg]);
+    };
+
+    socket.on('receiveMessage', handleReceiveMessage);
+    return () => {
+      socket.off('receiveMessage', handleReceiveMessage);
+    };
+  }, [socket]);
+
   const sendMessage = () => {
+    if (!socket || !conversation || !user) return;
     if (conversation) {
       const message = {
-        sender: 'You',
-        message: 'Hello!',
-        timestamp: new Date()
+        senderId: user?._id,
+        message: text,
+        conversationId: conversation._id
       };
-      socket.emit('sendMessage', 'Send from client');
-      console.log('Message sent:', message);
+      socket.emit('sendMessage', message);
+      setText('');
     }
   };
+  const endRef = useRef<HTMLDivElement | null>(null);
 
+  // Scroll when new messages arrive
+  useEffect(() => {
+    if (endRef.current) {
+      endRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
   const partner = conversation?.users.find((item) => item.id !== user?._id);
 
   return (
@@ -81,22 +109,13 @@ export default function ChatContent({
       {conversation ? (
         <div
           className={cn(
-            'bg-primary-foreground absolute inset-0 h-full left-full z-50 hidden w-full flex-1 flex-col rounded-md border shadow-xs transition-all duration-200 sm:static sm:z-auto sm:flex',
-            mobileSelectedUser && 'left-0 flex'
+            'bg-primary-foreground absolute inset-0 h-full left-full z-50 hidden w-full flex-1 flex-col rounded-md border shadow-xs transition-all duration-200 sm:static sm:z-auto sm:flex'
           )}
         >
           {/* Top Part */}
           <div className="bg-secondary mb-1 flex flex-none justify-between rounded-t-md p-4 shadow-lg">
             {/* Left */}
             <div className="flex gap-3">
-              <Button
-                size="icon"
-                variant="ghost"
-                className="-ml-2 h-full sm:hidden"
-                onClick={() => setMobileSelectedUser(null)}
-              >
-                <ArrowLeft />
-              </Button>
               <div className="flex items-center gap-2 lg:gap-4">
                 <Avatar className="size-9 lg:size-11">
                   <AvatarImage
@@ -146,14 +165,14 @@ export default function ChatContent({
           <div className="flex flex-1 flex-col gap-2 rounded-md px-4 pt-0 pb-4 ">
             <div className="flex size-full flex-1">
               <div className="chat-text-container relative -mr-4 flex flex-1 flex-col overflow-y-hidden">
-                <div className="chat-flex flex h-40 w-full grow flex-col-reverse justify-start gap-4 overflow-y-auto py-2 pr-4 pb-4">
+                <div className="chat-flex flex h-40 w-full grow flex-col justify-start gap-4 overflow-y-auto py-2 pr-4 pb-4">
                   {messages.map((msg, index) => (
                     <div
-                      key={`${msg.senderID}-${msg.createdAt}-${index}`}
+                      key={`${msg?.senderId}-${msg?.createdAt}-${index}`}
                       className={cn(
                         'chat-box max-w-72 px-3 py-2 break-words shadow-lg',
-                        msg.senderID === 'You'
-                          ? 'bg-primary/85 text-primary-foreground/75 self-end rounded-[16px_16px_0_16px]'
+                        msg?.senderId === user?._id
+                          ? 'bg-chart-2 text-chart-2-foreground/75 self-end rounded-[16px_16px_0_16px]'
                           : 'bg-secondary self-start rounded-[16px_16px_16px_0]'
                       )}
                     >
@@ -161,17 +180,18 @@ export default function ChatContent({
                       <span
                         className={cn(
                           'text-muted-foreground mt-1 block text-xs font-light italic',
-                          msg.senderID === 'You' && 'text-right'
+                          msg?.senderId === user?._id && 'text-right'
                         )}
                       >
                         {format(msg.createdAt, 'h:mm a')}
                       </span>
                     </div>
                   ))}
+                  <div ref={endRef} />
                 </div>
               </div>
             </div>
-            <form className="flex w-full flex-none gap-2">
+            <div className="flex w-full flex-none gap-2">
               <div className="border-input focus-within:ring-ring flex flex-1 items-center gap-2 rounded-md border px-2 py-1 focus-within:ring-1 focus-within:outline-hidden lg:gap-4">
                 <div className="space-x-1">
                   <Button
@@ -203,6 +223,14 @@ export default function ChatContent({
                   <span className="sr-only">Chat Text Box</span>
                   <input
                     type="text"
+                    name="text"
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    onKeyUp={(e) => {
+                      if (e.key === 'Enter' && text.trim()) {
+                        sendMessage();
+                      }
+                    }}
                     placeholder="Type your messages..."
                     className="h-8 w-full bg-inherit focus-visible:outline-hidden"
                   />
@@ -216,10 +244,7 @@ export default function ChatContent({
                   <Send size={20} />
                 </Button>
               </div>
-              <Button className="h-full sm:hidden">
-                <Send size={18} /> Send
-              </Button>
-            </form>
+            </div>
           </div>
         </div>
       ) : (
@@ -245,6 +270,10 @@ export default function ChatContent({
               Send message
             </Button>
           </div>
+          <NewChat
+            onOpenChange={setCreateConversationDialog}
+            open={createConversationDialogOpened}
+          />
         </div>
       )}
     </>

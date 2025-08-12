@@ -1,5 +1,5 @@
 import AxiosInstance from '@/lib/axios';
-import { ILoginDTO, IUser } from '@/type/login';
+import { ILoginDTO, IRegisterDTO, IUser } from '@/type/login';
 import useSWR from 'swr';
 
 interface ILoginResponse {
@@ -23,4 +23,8 @@ export const useProfile = () => {
     isLoading,
     isError: error
   };
+};
+
+export const useSignUp = (data: IRegisterDTO): Promise<ILoginResponse> => {
+  return AxiosInstance.post('/user/register', data);
 };

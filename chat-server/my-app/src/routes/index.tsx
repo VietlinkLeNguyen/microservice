@@ -1,8 +1,8 @@
 import { Main } from '@/components/Main';
 import AdminLayout from '@/layouts/admin';
 import About from '@/pages/about';
-import Contact from '@/pages/contact';
 import { Login } from '@/pages/login';
+import { SignUp } from '@/pages/sign-up';
 import { Route, Routes } from 'react-router';
 
 export default function RouteApp() {
@@ -11,7 +11,7 @@ export default function RouteApp() {
       <Route element={<AdminLayout />}>
         <Route path="/" element={<Main />} />
         <Route path="/about" element={<About />} />
-        <Route path="/contact" element={<Contact />} />
+        <Route path="/sign-up" element={<SignUp />} />
         <Route path="/login" element={<Login />} />
 
       </Route>

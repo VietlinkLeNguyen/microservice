@@ -16,7 +16,7 @@ const send = async (req: Request, res: Response) => {
       senderId: _id,
       message,
     });
-    await Conversation.updateOne({ _id: conversationId }, { $push: { lastMessage: newMessage._id } });
+    await Conversation.updateOne({ _id: conversationId }, { lastMessage: newMessage._id });
 
     const listReceivers = conversation.users
       .filter((user) => user._id !== _id)
@@ -59,7 +59,9 @@ const getConversation = async (req: Request, res: Response) => {
 
     const messages = await Message.find({
       conversationId,
-    }).select("_id senderId message createdAt");
+    })
+      .select("_id senderId message createdAt")
+      .sort({ createdAt: 1 });
 
     return void res.json({
       status: 200,

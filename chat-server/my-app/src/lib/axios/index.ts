@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 
 // Create an instance of axios with some default configuration
 const AxiosInstance = axios.create({
-  baseURL: 'http://localhost:85',
+  baseURL: 'http://localhost',
   headers: {
     'Content-Type': 'application/json'
   }
