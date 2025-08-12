@@ -11,6 +11,8 @@ export const getAllConversations = async () => {
 export const getMessages = async (
   conversationId: string
 ): Promise<Message[]> => {
-  const response = await AxiosInstance.get(`/chat/${conversationId}`);
+  const response = await AxiosInstance.get(
+    `/chat/conversation/${conversationId}`
+  );
   return response.data;
 };
