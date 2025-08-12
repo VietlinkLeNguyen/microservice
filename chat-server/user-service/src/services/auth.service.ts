@@ -28,7 +28,7 @@ class AuthService {
     try {
       const userExists = await User.findOne({ email: userData.email });
       if (userExists) {
-        throw new Error("User already exists!");
+        throw new ApiError(400, "User already exists!");
       }
       const encryptedPassword = await bcrypt.hash(userData.password, 10);
       const user = await User.create({
@@ -39,7 +39,7 @@ class AuthService {
 
       return user;
     } catch (error: any) {
-      throw new Error("Error registering user");
+      throw new ApiError(error.statusCode ?? 500, error.message ?? "Error registering user");
     }
   }
 

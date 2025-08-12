@@ -10,6 +10,8 @@ class AuthController {
         data: data,
       });
     } catch (error: any) {
+      console.log("Registration error:", error);
+
       res.status(error.statusCode).json({
         status: error.statusCode,
         message: error.message,

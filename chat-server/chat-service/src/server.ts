@@ -4,6 +4,7 @@ import { Socket, Server as SocketIOServer } from "socket.io";
 import app from "./app";
 import config from "./config/config";
 import { Message, connectDB } from "./database";
+import Conversation from "./database/models/ConversationModel";
 
 let server: Server;
 connectDB();
@@ -47,6 +48,7 @@ io.on("connection", (socket: Socket) => {
 
     const msg = new Message({ senderId, conversationId, message });
     await msg.save();
+    await Conversation.updateOne({ _id: conversationId }, { lastMessage: msg._id });
 
     // Emit to all clients in the room including the sender
     io.to(conversationId).emit("receiveMessage", msg);

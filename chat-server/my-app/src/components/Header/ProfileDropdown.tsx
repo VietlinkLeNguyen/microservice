@@ -10,9 +10,15 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { NavLink } from 'react-router';
+import { NavLink, useNavigate } from 'react-router';
 
 export function ProfileDropdown() {
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    const navigate = useNavigate();
+    navigate('/login');
+  };
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
@@ -55,10 +61,11 @@ export function ProfileDropdown() {
           <DropdownMenuItem>New Team</DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <NavLink to="/login">
-
-          Log out
-        </NavLink>
+        <DropdownMenuItem asChild>
+          <NavLink to="/login" onClick={logout}>
+            Log out
+          </NavLink>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

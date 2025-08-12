@@ -1,7 +1,7 @@
 import AxiosInstance from '@/lib/axios';
 export interface Message {
   _id: string;
-  senderID: string;
+  senderId: string;
   message: string;
   createdAt: Date;
 }

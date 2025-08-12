@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import {
   Video
 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
+import { NewChat } from './NewChat';
 
 export default function ChatContent({
   conversation
@@ -90,9 +91,17 @@ export default function ChatContent({
         conversationId: conversation._id
       };
       socket.emit('sendMessage', message);
+      setText('');
     }
   };
+  const endRef = useRef<HTMLDivElement | null>(null);
 
+  // Scroll when new messages arrive
+  useEffect(() => {
+    if (endRef.current) {
+      endRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
   const partner = conversation?.users.find((item) => item.id !== user?._id);
 
   return (
@@ -159,11 +168,11 @@ export default function ChatContent({
                 <div className="chat-flex flex h-40 w-full grow flex-col justify-start gap-4 overflow-y-auto py-2 pr-4 pb-4">
                   {messages.map((msg, index) => (
                     <div
-                      key={`${msg?.senderID}-${msg?.createdAt}-${index}`}
+                      key={`${msg?.senderId}-${msg?.createdAt}-${index}`}
                       className={cn(
                         'chat-box max-w-72 px-3 py-2 break-words shadow-lg',
-                        msg?.senderID === 'You'
-                          ? 'bg-primary/85 text-primary-foreground/75 self-end rounded-[16px_16px_0_16px]'
+                        msg?.senderId === user?._id
+                          ? 'bg-chart-2 text-chart-2-foreground/75 self-end rounded-[16px_16px_0_16px]'
                           : 'bg-secondary self-start rounded-[16px_16px_16px_0]'
                       )}
                     >
@@ -171,13 +180,14 @@ export default function ChatContent({
                       <span
                         className={cn(
                           'text-muted-foreground mt-1 block text-xs font-light italic',
-                          msg?.senderID === 'You' && 'text-right'
+                          msg?.senderId === user?._id && 'text-right'
                         )}
                       >
                         {format(msg.createdAt, 'h:mm a')}
                       </span>
                     </div>
                   ))}
+                  <div ref={endRef} />
                 </div>
               </div>
             </div>
@@ -216,6 +226,11 @@ export default function ChatContent({
                     name="text"
                     value={text}
                     onChange={(e) => setText(e.target.value)}
+                    onKeyUp={(e) => {
+                      if (e.key === 'Enter' && text.trim()) {
+                        sendMessage();
+                      }
+                    }}
                     placeholder="Type your messages..."
                     className="h-8 w-full bg-inherit focus-visible:outline-hidden"
                   />
@@ -255,6 +270,10 @@ export default function ChatContent({
               Send message
             </Button>
           </div>
+          <NewChat
+            onOpenChange={setCreateConversationDialog}
+            open={createConversationDialogOpened}
+          />
         </div>
       )}
     </>
